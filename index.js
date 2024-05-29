@@ -1,58 +1,74 @@
 const express = require("express");
-const multer = require("multer");
 const tf = require("@tensorflow/tfjs-node");
-const fs = require("fs");
-const path = require("path");
-const bodyParser = require("body-parser");
-
+const { createCanvas } = require("canvas");
 const app = express();
-const upload = multer({ dest: "uploads/" });
+const port = 3000;
 
 // Load the model
-const modelPath = "file://./model/model.json";
-let model;
 async function loadModel() {
- model = await tf.loadLayersModel(modelPath);
+ const model = await tf.loadLayersModel("file://./model/model.json");
+ return model;
 }
-loadModel();
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// Generate an image with a number (0 or 1)
+function generateImage(number) {
+ const canvas = createCanvas(28, 28);
+ const ctx = canvas.getContext("2d");
 
-// Endpoint to handle image uploads and predictions
-app.post("/predict", upload.single("digit"), async (req, res) => {
- if (!req.file) {
-  return res.status(400).send("No image uploaded.");
+ ctx.fillStyle = "white";
+ ctx.fillRect(0, 0, 28, 28);
+ ctx.fillStyle = "black";
+ ctx.font = "24px Arial";
+ ctx.fillText(number.toString(), 5, 24);
+
+ return canvas.toBuffer("image/png");
+}
+
+// Convert the image to tensor
+function imageToTensor(imageBuffer) {
+ const image = tf.node.decodeImage(imageBuffer, 1);
+ const resizedImage = tf.image.resizeBilinear(image, [28, 28]);
+ const tensor = resizedImage.expandDims(0).toFloat().div(tf.scalar(255.0));
+ return tensor.reshape([1, 28 * 28]);
+}
+
+let model;
+
+// Middleware to load the model
+app.use(async (req, res, next) => {
+ if (!model) {
+  model = await loadModel();
  }
-
- try {
-  // Preprocess the image
-  const image = fs.readFileSync(req.file.path);
-  const tensor = tf.node
-   .decodeImage(image, 1) // Decode image as grayscale
-   .resizeNearestNeighbor([28, 28]) // Resize to 28x28 pixels
-   .toFloat()
-   .div(tf.scalar(255.0)) // Normalize pixel values to [0, 1]
-   .reshape([1, 28 * 28]); // Flatten the image to [1, 28*28]
-
-  // Predict the image
-  const predictions = await model.predict(tensor).data();
-  console.log("🚀 ~ app.post ~ predictions:", predictions);
-  console.log("🚀 ~ app.post ~ predictions[0]:", predictions[0].toFixed(2), predictions[1].toFixed(2));
-  let prediction = predictions[0].toFixed(2) > predictions[1].toFixed(2) ? "It's a 0" : "It's a 1";
-
-  // Send the result
-  res.status(200).json({ prediction, predictions });
- } catch (error) {
-  res.status(500).send(error.toString());
- }
-
- // Clean up
- fs.unlinkSync(req.file.path);
+ next();
 });
 
-// Start the server
-const port = 3000;
+// Endpoint to generate an image
+app.get("/generate-image/:number", (req, res) => {
+ const number = parseInt(req.params.number, 10);
+ if (number !== 0 && number !== 1) {
+  return res.status(400).send("Only 0 or 1 is allowed.");
+ }
+
+ const imageBuffer = generateImage(number);
+ res.type("png");
+ res.send(imageBuffer);
+});
+
+// Endpoint to predict the number from the generated image
+app.post("/predict-number", async (req, res) => {
+ const number = req.query.number;
+ if (number !== "0" && number !== "1") {
+  return res.status(400).send("Only 0 or 1 is allowed.");
+ }
+
+ const imageBuffer = generateImage(number);
+ const tensor = imageToTensor(imageBuffer);
+ const prediction = model.predict(tensor);
+ const predictedClass = prediction.argMax(1).dataSync()[0];
+
+ res.send({ predicted: predictedClass, prediction });
+});
+
 app.listen(port, () => {
- console.log(`Server running on http://localhost:${port}`);
+ console.log(`Server is running on http://localhost:${port}`);
 });

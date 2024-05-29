@@ -7,7 +7,7 @@
     {
      "class_name": "Dense",
      "config": {
-      "units": 128,
+      "units": 256,
       "activation": "relu",
       "use_bias": true,
       "kernel_initializer": {
@@ -27,6 +27,54 @@
      }
     },
     {
+     "class_name": "Dropout",
+     "config": { "rate": 0.2, "noise_shape": null, "seed": null, "name": "dropout_Dropout1", "trainable": true }
+    },
+    {
+     "class_name": "Dense",
+     "config": {
+      "units": 128,
+      "activation": "relu",
+      "use_bias": true,
+      "kernel_initializer": {
+       "class_name": "VarianceScaling",
+       "config": { "scale": 1, "mode": "fan_avg", "distribution": "normal", "seed": null }
+      },
+      "bias_initializer": { "class_name": "Zeros", "config": {} },
+      "kernel_regularizer": null,
+      "bias_regularizer": null,
+      "activity_regularizer": null,
+      "kernel_constraint": null,
+      "bias_constraint": null,
+      "name": "dense_Dense2",
+      "trainable": true
+     }
+    },
+    {
+     "class_name": "Dropout",
+     "config": { "rate": 0.2, "noise_shape": null, "seed": null, "name": "dropout_Dropout2", "trainable": true }
+    },
+    {
+     "class_name": "Dense",
+     "config": {
+      "units": 64,
+      "activation": "relu",
+      "use_bias": true,
+      "kernel_initializer": {
+       "class_name": "VarianceScaling",
+       "config": { "scale": 1, "mode": "fan_avg", "distribution": "normal", "seed": null }
+      },
+      "bias_initializer": { "class_name": "Zeros", "config": {} },
+      "kernel_regularizer": null,
+      "bias_regularizer": null,
+      "activity_regularizer": null,
+      "kernel_constraint": null,
+      "bias_constraint": null,
+      "name": "dense_Dense3",
+      "trainable": true
+     }
+    },
+    {
      "class_name": "Dense",
      "config": {
       "units": 2,
@@ -42,7 +90,7 @@
       "activity_regularizer": null,
       "kernel_constraint": null,
       "bias_constraint": null,
-      "name": "dense_Dense2",
+      "name": "dense_Dense4",
       "trainable": true
      }
     }
@@ -55,10 +103,14 @@
   {
    "paths": ["weights.bin"],
    "weights": [
-    { "name": "dense_Dense1/kernel", "shape": [784, 128], "dtype": "float32" },
-    { "name": "dense_Dense1/bias", "shape": [128], "dtype": "float32" },
-    { "name": "dense_Dense2/kernel", "shape": [128, 2], "dtype": "float32" },
-    { "name": "dense_Dense2/bias", "shape": [2], "dtype": "float32" }
+    { "name": "dense_Dense1/kernel", "shape": [784, 256], "dtype": "float32" },
+    { "name": "dense_Dense1/bias", "shape": [256], "dtype": "float32" },
+    { "name": "dense_Dense2/kernel", "shape": [256, 128], "dtype": "float32" },
+    { "name": "dense_Dense2/bias", "shape": [128], "dtype": "float32" },
+    { "name": "dense_Dense3/kernel", "shape": [128, 64], "dtype": "float32" },
+    { "name": "dense_Dense3/bias", "shape": [64], "dtype": "float32" },
+    { "name": "dense_Dense4/kernel", "shape": [64, 2], "dtype": "float32" },
+    { "name": "dense_Dense4/bias", "shape": [2], "dtype": "float32" }
    ]
   }
  ],

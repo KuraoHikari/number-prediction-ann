@@ -1,13 +1,13 @@
 const tf = require("@tensorflow/tfjs-node");
 const fs = require("fs");
+const mnist = require("mnist");
 
 // Load and preprocess the MNIST dataset
 async function loadData() {
- const mnist = require("mnist");
  const set = mnist.set(60000, 10000);
 
- const train = set.training;
- const test = set.test;
+ const train = set.training.filter((d) => d.output[0] === 1 || d.output[1] === 1);
+ const test = set.test.filter((d) => d.output[0] === 1 || d.output[1] === 1);
 
  const trainX = tf.tensor2d(
   train.map((d) => d.input),
@@ -34,7 +34,11 @@ async function loadData() {
 function createModel() {
  const model = tf.sequential();
 
- model.add(tf.layers.dense({ inputShape: [28 * 28], units: 128, activation: "relu" }));
+ model.add(tf.layers.dense({ inputShape: [28 * 28], units: 256, activation: "relu" }));
+ model.add(tf.layers.dropout({ rate: 0.2 }));
+ model.add(tf.layers.dense({ units: 128, activation: "relu" }));
+ model.add(tf.layers.dropout({ rate: 0.2 }));
+ model.add(tf.layers.dense({ units: 64, activation: "relu" }));
  model.add(tf.layers.dense({ units: 2, activation: "softmax" }));
 
  model.compile({
@@ -52,9 +56,9 @@ async function trainModel() {
  const model = createModel();
 
  await model.fit(trainX, trainY, {
-  epochs: 5,
+  epochs: 20,
   validationData: [testX, testY],
-  callbacks: tf.callbacks.earlyStopping({ monitor: "val_loss" }),
+  callbacks: tf.callbacks.earlyStopping({ monitor: "val_loss", patience: 20 }),
  });
 
  await model.save("file://./model");
